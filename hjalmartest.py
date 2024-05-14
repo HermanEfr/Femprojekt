@@ -18,8 +18,8 @@ t = 1.6                 #Thickness in meters
 D = k*np.eye(2)
 
 a_c = 120 # W/m2K
-T_cool = 277 #Kelvin
-T_hot = 285 #Kelvin
+T_MARKER_T_IN = 277 #Kelvin
+T_MARKER_T_OUT = 285 #Kelvin
 T_inf = 293 #Kelvin
 
 g = cfg.Geometry()
@@ -56,40 +56,40 @@ g.point([262.5, 75]) # point 21
 g.point([237.5, 100]) # point 22
 
 
-nothing = 10
-hot = 30
-cool = 20
-ambient = 40
+ZERO_CONVECTION = 10
+MARKER_T_OUT = 30
+MARKER_T_IN = 20
+MARKER_T_INF = 40
 
 
 
-g.spline([4, 1], marker = nothing) #top left 
-g.spline([1, 2], marker  = ambient) #Top row
-g.spline([2, 3], marker = nothing) #Right slope
-g.spline([3, 0], marker = nothing) #Bottom row
-g.spline([0, 7], marker = nothing) #Left bottom
+g.spline([4, 1], marker = ZERO_CONVECTION) #top left 
+g.spline([1, 2], marker  = MARKER_T_INF) #Top row
+g.spline([2, 3], marker = ZERO_CONVECTION) #Right slope
+g.spline([3, 0], marker = ZERO_CONVECTION) #Bottom row
+g.spline([0, 7], marker = ZERO_CONVECTION) #Left bottom
 
 #circle 1
-g.circle([4, 5, 6], marker = hot) 
-g.circle([6, 5, 7], marker = hot)
+g.circle([4, 5, 6], marker = MARKER_T_OUT) 
+g.circle([6, 5, 7], marker = MARKER_T_OUT)
 
 #circle 2
-g.circle([8, 9, 10], marker = cool) 
-g.circle([10, 9, 11], marker = cool)
-g.circle([11, 9, 12], marker = cool) 
-g.circle([12, 9, 8], marker = cool)
+g.circle([8, 9, 10], marker = MARKER_T_IN) 
+g.circle([10, 9, 11], marker = MARKER_T_IN)
+g.circle([11, 9, 12], marker = MARKER_T_IN) 
+g.circle([12, 9, 8], marker = MARKER_T_IN)
 
 #circle 3
-g.circle([13, 14, 15], marker = hot) 
-g.circle([15, 14, 16], marker = hot)
-g.circle([16, 14, 17], marker = hot) 
-g.circle([17, 14, 13], marker = hot)
+g.circle([13, 14, 15], marker = MARKER_T_OUT) 
+g.circle([15, 14, 16], marker = MARKER_T_OUT)
+g.circle([16, 14, 17], marker = MARKER_T_OUT) 
+g.circle([17, 14, 13], marker = MARKER_T_OUT)
 
 #circle 4
-g.circle([18, 19, 20], marker = cool) 
-g.circle([20, 19, 21], marker = cool)
-g.circle([21, 19, 22], marker = cool) 
-g.circle([22, 19, 18], marker = cool)
+g.circle([18, 19, 20], marker = MARKER_T_IN) 
+g.circle([20, 19, 21], marker = MARKER_T_IN)
+g.circle([21, 19, 22], marker = MARKER_T_IN) 
+g.circle([22, 19, 18], marker = MARKER_T_IN)
 
 
 g.surface([0, 1, 2, 3, 4, 6, 5], ([7, 8,9,10], [11,12,13,14], [15,16,17,18]))
@@ -133,23 +133,43 @@ for element in range(len(edof)):
     #Top
     for node in range(3):
 
-        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[hot]: #If two points on the boundary are on the hot battery
+        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[MARKER_T_OUT]: #If two nodes on the boundary are on the MARKER_T_OUT battery
+            
             distance =np.linalg.norm(coords[element][node], coords[element][(node+1)%3])
-            f[edof[element][node]] +=  T_hot*a_c*t*distance
-            f[edof[element][(node+1)%3]] +=  T_hot*a_c*t*distance
-        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[cool]: #If two points on the boundary are on the cool battery
-            distance = np.linalg.norm(coords[element][node], coords[element][(node+1)%3])
-            f[edof[element][node]] +=  T-cool*a_c*t*distance
-            f[edof[element][(node+1)%3]] +=  T_hot*a_c*t*distance
-        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[ambient]:
-            distance = np.linalg.norm(coords[element][node], coords[element][(node+1)%3])
-            f[edof[element][node]] +=  T-cool*a_c*t*distance
-            f[edof[element][(node+1)%3]] +=  T_hot*a_c*t*distance
-        
 
+            f[edof[element][node]] +=  T_MARKER_T_OUT*a_c*t*distance
+            f[edof[element][(node+1)%3]] +=  T_MARKER_T_OUT*a_c*t*distance
+
+
+        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[MARKER_T_IN]: #If two nodes on the boundary are on the MARKER_T_IN battery
+           
+            distance = np.linalg.norm(coords[element][node], coords[element][(node+1)%3])
+            f[edof[element][node]] +=  T_MARKER_T_IN*a_c*t*distance
+            f[edof[element][(node+1)%3]] +=  T_MARKER_T_OUT*a_c*t*distance
+
+        if (edof[element][node] and edof[element][(node+1)%3]) in bdofs[MARKER_T_INF]:
+
+            distance = np.linalg.norm(coords[element][node], coords[element][(node+1)%3]) #If two nodes on the boundary are on the convection
+            f[edof[element][node]] +=  T-MARKER_T_IN*a_c*t*distance
+            f[edof[element][(node+1)%3]] +=  T_MARKER_T_OUT*a_c*t*distance
     
-
-
+    for i in range(3):
+        for j in range(i+1, 3):
+            if element[i] in mesh.bdofs[MARKER_T_INF] and element[j] in mesh.bdofs[MARKER_T_INF]:
+                # do convection things
+                dist = np.linalg.norm(element[i]-element[j])
+                Kce = np.zeros((2,2))
+            
+            if element[i] in mesh.bdofs[MARKER_T_IN] and element[j] in mesh.bdofs[MARKER_T_IN]:
+                # do const flux
+                dist = np.linalg.norm(element[i]-element[j])
+                Kce = np.zeros((2,2))
+    
+            if element[i] in mesh.bdofs[MARKER_T_OUT] and element[j] in mesh.bdofs[MARKER_T_OUT]:
+                # do convection things
+                dist = np.linalg.norm(element[i]-element[j])
+                Kce = np.zeros((2,2))
+        cfc.assem(edof, K, Kce)
 
 
 
